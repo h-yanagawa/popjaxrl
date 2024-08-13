@@ -12,10 +12,12 @@ from .popgym_cartpole import NoisyStatelessCartPole, EnvParams, EnvState
 
 class MetaAugNetwork(nn.Module):
     out_size: int = 4
+    depth: int = 1
 
     @nn.compact
     def __call__(self, x):
-        x = nn.Dense(self.out_size, kernel_init=orthogonal(np.sqrt(2)), bias_init=constant(0.0))(x)
+        for _ in range(self.depth):
+            x = nn.Dense(self.out_size, kernel_init=orthogonal(np.sqrt(2)), bias_init=constant(0.0))(x)
         return x
 
 @struct.dataclass
@@ -34,11 +36,14 @@ class MetaEnvParams:
 
 class NoisyStatelessMetaCartPole(environment.Environment):
 
-    def __init__(self):
+    def __init__(self, **env_kwargs):
         super().__init__()
         self.env = NoisyStatelessCartPole(max_steps_in_episode=200, noise_sigma=0.0)
         self.obs_shape = (7,)
-        self.obs_aug = MetaAugNetwork(4)
+        meta_depth = 1
+        if 'meta_depth' in env_kwargs:
+            meta_depth = env_kwargs['meta_depth']
+        self.obs_aug = MetaAugNetwork(4, meta_depth)
 
     @property
     def default_params(self) -> MetaEnvParams:

@@ -7,10 +7,10 @@ from algorithms.ppo_gru import make_train as make_train_gru
 from algorithms.ppo_s5 import make_train as make_train_s5
 import argparse
 
-def run(num_runs, env_name, arch="gru", file_tag=""):
+def run(num_runs, env_name, arch="gru", file_tag="", env_kwargs={}):
     print("*"*10)
     print(f"Running {num_runs} runs of {env_name} with arch {arch}")
-    env, env_params = make(env_name)
+    env, env_params = make(env_name, **env_kwargs)
 
     config = {
         "LR": 5e-5,
@@ -86,7 +86,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--num-runs", type=int, required=True)
 parser.add_argument("--env", type=str, default="")
 parser.add_argument("--arch", type=str, default="s5")
+parser.add_argument("-ek", "--env-kwargs", type=str, default="{}")
 args = parser.parse_args()
+args.env_kwargs = eval(args.env_kwargs)
 
 if __name__ == "__main__":
     run(args.num_runs, args.env, args.arch)
