@@ -13,10 +13,13 @@ from .popgym_cartpole import NoisyStatelessCartPole, EnvParams, EnvState
 class MetaAugNetwork(nn.Module):
     out_size: int = 4
     depth: int = 1
+    num_envs: int = 1
+    random_matrices_seed: int = 42
 
     @nn.compact
     def __call__(self, x):
         for _ in range(self.depth):
+            random_matrix = jax.random.orthogonal(self.random_matrices_seed, (self.num_envs, self.out_size, x.shape[-1]))
             x = nn.Dense(self.out_size, kernel_init=orthogonal(np.sqrt(2)), bias_init=constant(0.0))(x)
         return x
 
@@ -41,9 +44,13 @@ class NoisyStatelessMetaCartPole(environment.Environment):
         self.env = NoisyStatelessCartPole(max_steps_in_episode=200, noise_sigma=0.0)
         self.obs_shape = (7,)
         meta_depth = 1
+        random_matrices_seed = 42
         if 'meta_depth' in env_kwargs:
             meta_depth = env_kwargs['meta_depth']
-        self.obs_aug = MetaAugNetwork(4, meta_depth)
+        if 'num_envs' in env_kwargs:
+            num_envs = int(env_kwargs['num_envs'])
+            random_matrices_seed = int(env_kwargs['random_matrices_seed'])
+        self.obs_aug = MetaAugNetwork(4, meta_depth, num_envs, random_matrices_seed)
 
     @property
     def default_params(self) -> MetaEnvParams:
